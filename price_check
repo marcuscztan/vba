@@ -1,1 +1,60 @@
-
+Sub CopyDataIntoTemplate()
+    Dim wsSource As Worksheet, wsDest As Worksheet
+    Dim wbSource As Workbook, wbDest As Workbook
+    Dim fd As FileDialog
+    Dim strFilePath As String, templatePath As String
+    Dim i As Integer
+    
+    ' Path to your template file (adjust the path as necessary)
+    templatePath = "C:\Path\To\Template CHECKING FILE.xlsx"
+    
+    ' Make a copy of the Template CHECKING FILE
+    FileCopy templatePath, "C:\Path\To\New Template CHECKING FILE.xlsx"
+    
+    ' Open the copied template file
+    Set wbDest = Workbooks.Open("C:\Path\To\New Template CHECKING FILE.xlsx")
+    
+    ' Open file dialog to select the source Excel file
+    Set fd = Application.FileDialog(msoFileDialogFilePicker)
+    
+    With fd
+        .AllowMultiSelect = False
+        .Title = "Select the Excel File"
+        .Filters.Clear
+        .Filters.Add "Excel Files", "*.xlsx; *.xls; *.xlsm"
+        
+        If .Show = True Then
+            strFilePath = .SelectedItems(1)
+        Else
+            MsgBox "No file selected. Operation Cancelled."
+            Exit Sub
+        End If
+    End With
+    
+    ' Open the selected workbook
+    Set wbSource = Workbooks.Open(strFilePath)
+    
+    ' Loop through each sheet in the source workbook
+    For Each wsSource In wbSource.Sheets
+        ' Check if the sheet exists in the destination workbook
+        On Error Resume Next
+        Set wsDest = wbDest.Sheets(wsSource.Name)
+        On Error GoTo 0
+        
+        ' If the sheet exists, copy and paste the range
+        If Not wsDest Is Nothing Then
+            wsSource.Range("A1:P" & wsSource.Cells(wsSource.Rows.Count, "A").End(xlUp).Row).Copy
+            wsDest.Range("A1").PasteSpecial Paste:=xlPasteValues
+            Set wsDest = Nothing
+        End If
+    Next wsSource
+    
+    ' Close the source workbook without saving changes
+    wbSource.Close SaveChanges:=False
+    
+    ' Optionally, save and close the destination workbook
+    wbDest.Save
+    wbDest.Close SaveChanges:=True
+    
+    MsgBox "Data copied successfully into the template."
+End Sub
