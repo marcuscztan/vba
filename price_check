@@ -1,9 +1,9 @@
-Sub CopyDataIntoTemplate()
+Sub CopyDataIntoTemplateAndOpenSecondFile()
     Dim wsSource As Worksheet, wsDest As Worksheet
-    Dim wbSource As Workbook, wbDest As Workbook
+    Dim wbSource As Workbook, wbDest As Workbook, wbSecond As Workbook
     Dim fd As FileDialog
     Dim strFilePath As String, templatePath As String
-    Dim i As Integer
+    Dim lastSheetIndex As Integer
     
     ' Path to your template file (adjust the path as necessary)
     templatePath = "C:\Path\To\Template CHECKING FILE.xlsx"
@@ -14,47 +14,64 @@ Sub CopyDataIntoTemplate()
     ' Open the copied template file
     Set wbDest = Workbooks.Open("C:\Path\To\New Template CHECKING FILE.xlsx")
     
-    ' Open file dialog to select the source Excel file
-    Set fd = Application.FileDialog(msoFileDialogFilePicker)
+    ' Select the first Excel file
+    strFilePath = OpenFileDialog("Select the Excel File")
+    If strFilePath = "" Then Exit Sub ' If no file selected, exit the subroutine
     
-    With fd
-        .AllowMultiSelect = False
-        .Title = "Select the Excel File"
-        .Filters.Clear
-        .Filters.Add "Excel Files", "*.xlsx; *.xls; *.xlsm"
-        
-        If .Show = True Then
-            strFilePath = .SelectedItems(1)
-        Else
-            MsgBox "No file selected. Operation Cancelled."
-            Exit Sub
-        End If
-    End With
-    
-    ' Open the selected workbook
+    ' Open the first selected workbook
     Set wbSource = Workbooks.Open(strFilePath)
     
-    ' Loop through each sheet in the source workbook
-    For Each wsSource In wbSource.Sheets
-        ' Check if the sheet exists in the destination workbook
-        On Error Resume Next
-        Set wsDest = wbDest.Sheets(wsSource.Name)
-        On Error GoTo 0
-        
-        ' If the sheet exists, copy and paste the range
-        If Not wsDest Is Nothing Then
-            wsSource.Range("A1:P" & wsSource.Cells(wsSource.Rows.Count, "A").End(xlUp).Row).Copy
-            wsDest.Range("A1").PasteSpecial Paste:=xlPasteValues
-            Set wsDest = Nothing
-        End If
-    Next wsSource
+    ' [Insert the code here that processes the first file as per initial requirements]
     
-    ' Close the source workbook without saving changes
+    ' Close the first selected workbook without saving changes
     wbSource.Close SaveChanges:=False
+    
+    ' Select the second Excel file
+    strFilePath = OpenFileDialog("Select the Second Excel File")
+    If strFilePath = "" Then Exit Sub ' If no file selected, exit the subroutine
+    
+    ' Open the second selected workbook
+    Set wbSecond = Workbooks.Open(strFilePath)
+    
+    ' Copy columns A to P from the first sheet of the second file
+    Set wsSource = wbSecond.Sheets(1) ' Assuming we always want the first sheet
+    lastSheetIndex = wbDest.Sheets.Count
+    wsSource.Range("A1:P" & wsSource.Cells(wsSource.Rows.Count, "A").End(xlUp).Row).Copy
+    wbDest.Sheets(lastSheetIndex).Range("A1").PasteSpecial Paste:=xlPasteValues
     
     ' Optionally, save and close the destination workbook
     wbDest.Save
     wbDest.Close SaveChanges:=True
     
-    MsgBox "Data copied successfully into the template."
+    ' Activate the second sheet of the second workbook
+    If wbSecond.Sheets.Count >= 2 Then
+        wbSecond.Sheets(2).Activate
+    Else
+        MsgBox "The workbook does not have a second sheet."
+    End If
+    
+    ' Optionally, bring the Excel window to the foreground
+    Application.WindowState = xlMaximized
+    Application.ActivateMicrosoftApp xlMicrosoftExcel
+    
+    MsgBox "Data copied successfully into the template and from the second file. The second selected file is now open on its second sheet."
 End Sub
+
+Function OpenFileDialog(prompt As String) As String
+    Dim fd As FileDialog
+    Set fd = Application.FileDialog(msoFileDialogFilePicker)
+    
+    With fd
+        .AllowMultiSelect = False
+        .Title = prompt
+        .Filters.Clear
+        .Filters.Add "Excel Files", "*.xlsx; *.xls; *.xlsm"
+        
+        If .Show = True Then
+            OpenFileDialog = .SelectedItems(1)
+        Else
+            MsgBox "No file selected. Operation Cancelled."
+            OpenFileDialog = ""
+        End If
+    End With
+End Function
